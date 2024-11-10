@@ -1,6 +1,6 @@
-import Order from "../domain/order.entity";
+import { Order } from "../domain/order.entity";
 
-export default interface CheckoutGateway {
+export interface CheckoutGateway {
   addOrder(order: Order): Promise<void>;
   findOrder(id: string): Promise<Order | null>;
 }
