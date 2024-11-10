@@ -1,26 +1,26 @@
-import { StringLocale } from "yup/lib/locale";
-
 export interface FindStoreCatalogFacadeInputDto {
-    id: string
+  id: string;
 }
 
-export interface FindStorageCatalogFacadeOutputDto {
+export interface FindStoreCatalogFacadeOutputDto {
+  id: string;
+  name: string;
+  description: string;
+  salesPrice: number;
+}
+
+export interface FindAllStoreCatalogFacadeOutputDto {
+  products: {
     id: string;
     name: string;
     description: string;
     salesPrice: number;
-}
-
-export interface FindAllStorageCatalogFacadeOutputDto {
-    products: {
-        id: string;
-        name: string;
-        description: string;
-        salesPrice: number;
-    }[];
+  }[];
 }
 
 export default interface StoreCatalogFacadeInterface {
-    find(input: FindStoreCatalogFacadeInputDto): Promise<FindStorageCatalogFacadeOutputDto>;
-    findAll(): Promise<FindAllStorageCatalogFacadeOutputDto>;
+  find(
+    id: FindStoreCatalogFacadeInputDto
+  ): Promise<FindStoreCatalogFacadeOutputDto>;
+  findAll(): Promise<FindAllStoreCatalogFacadeOutputDto>;
 }

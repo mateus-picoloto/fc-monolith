@@ -1,114 +1,131 @@
 import { Sequelize } from "sequelize-typescript";
-import InvoiceModel from "./invoice.model";
-import InvoiceItemsModel from "./invoice-items.model";
-import Invoice from "../domain/invoice.entity";
 import Id from "../../@shared/domain/value-object/id.value-object";
-import Address from "../domain/address";
-import InvoiceItems from "../domain/invoice-items.entity";
+import Address from "../domain/address.vo";
+import Invoice from "../domain/invoice.entity";
+import Product from "../domain/product.entity";
+import { InvoiceModel } from "./invoice.model";
 import InvoiceRepository from "./invoice.repository";
+import { InvoiceItemModel } from "./item.model";
 
-describe("Invoice repository test", () => {
-    let sequelize: Sequelize;
+describe("InvoiceRepository test", () => {
+  let sequelize: Sequelize;
 
-    beforeEach(async () => {
-        sequelize = new Sequelize({
-            dialect: "sqlite",
-            storage: ":memory:",
-            logging: false,
-            sync: { force: true },
-        });
-
-        await sequelize.addModels([InvoiceModel, InvoiceItemsModel]);
-        await sequelize.sync();
+  beforeEach(async () => {
+    sequelize = new Sequelize({
+      dialect: "sqlite",
+      storage: ":memory:",
+      logging: false,
+      sync: { force: true },
     });
 
-    afterEach(async () => {
-        await sequelize.close();
+    await sequelize.addModels([InvoiceModel, InvoiceItemModel]);
+    await sequelize.sync();
+  });
+
+  afterEach(async () => {
+    await sequelize.close();
+  });
+
+  it("should create a new invoice", async () => {
+    const repository = new InvoiceRepository();
+    const invoice = new Invoice({
+      id: new Id("1"),
+      name: "Teste",
+      document: "12345678901",
+      address: new Address({
+        street: "Rua Teste",
+        number: "123",
+        complement: "complemento",
+        city: "Teste",
+        state: "Teste",
+        zipCode: "12345678",
+      }),
+      items: [
+        new Product({
+          id: new Id("1"),
+          name: "Teste",
+          price: 10,
+        }),
+        new Product({
+          id: new Id("2"),
+          name: "Teste 2",
+          price: 20,
+        }),
+      ],
+    });
+    await repository.create(invoice);
+
+    const result = await InvoiceModel.findOne({
+      where: { id: "1" },
+      include: [InvoiceItemModel],
     });
 
-    it("should create an invoice", async () => {
-        const invoice = new Invoice({
-            id: new Id("1"),
-            name: "John Doe",
-            document: "123456",
-            address: new Address({
-                street: "Street 1",
-                number: "123",
-                complement: "Complement 1",
-                city: "City 1",
-                state: "State 1",
-                zipCode: "123456",
-            }),
-            items: [new InvoiceItems({
-                id: new Id("123"),
-                name: "Item 1",
-                price: 10
-            })]
-        });
+    expect(result).toBeDefined();
+    expect(result.id).toBe(invoice.id.id);
+    expect(result.name).toBe(invoice.name);
+    expect(result.document).toBe(invoice.document);
+    expect(result.street).toBe(invoice.address.street);
+    expect(result.number).toBe(invoice.address.number);
+    expect(result.complement).toBe(invoice.address.complement);
+    expect(result.city).toBe(invoice.address.city);
+    expect(result.state).toBe(invoice.address.state);
+    expect(result.zipcode).toBe(invoice.address.zipCode);
+    expect(result.items[0].id).toBe(invoice.items[0].id.id);
+    expect(result.items[0].name).toBe(invoice.items[0].name);
+    expect(result.items[0].price).toBe(invoice.items[0].price);
+    expect(result.items[1].id).toBe(invoice.items[1].id.id);
+    expect(result.items[1].name).toBe(invoice.items[1].name);
+    expect(result.items[1].price).toBe(invoice.items[1].price);
+    expect(result.total).toBe(30);
+  });
 
-        const repository = new InvoiceRepository();
-
-        await repository.add(invoice);
-
-        const invoiceDb = await InvoiceModel.findOne({
-            where: { id: invoice.id.id },
-            include: [{ model: InvoiceItemsModel }]
-        });
-
-        expect(invoice.id.id).toBe(invoiceDb.id);
-        expect(invoice.name).toBe(invoiceDb.name);
-        expect(invoice.document).toBe(invoiceDb.document);
-        expect(invoice.address.street).toBe(invoiceDb.street);
-        expect(invoice.address.number).toBe(invoiceDb.number);
-        expect(invoice.address.complement).toBe(invoiceDb.complement);
-        expect(invoice.address.city).toBe(invoiceDb.city);
-        expect(invoice.address.state).toBe(invoiceDb.state);
-        expect(invoice.address.zipCode).toBe(invoiceDb.zipCode);
-        expect(invoice.items.length).toBe(1);
-        expect(invoice.items[0].id.id).toBe(invoiceDb.items[0].id);
-        expect(invoice.items[0].name).toBe(invoiceDb.items[0].name);
-        expect(invoice.items[0].price).toBe(invoiceDb.items[0].price);
+  it("should find an invoice", async () => {
+    const repository = new InvoiceRepository();
+    const invoice = new Invoice({
+      id: new Id("1"),
+      name: "Teste",
+      document: "12345678901",
+      address: new Address({
+        street: "Rua Teste",
+        number: "123",
+        complement: "complemento",
+        city: "Teste",
+        state: "Teste",
+        zipCode: "12345678",
+      }),
+      items: [
+        new Product({
+          id: new Id("1"),
+          name: "Teste",
+          price: 10,
+        }),
+        new Product({
+          id: new Id("2"),
+          name: "Teste 2",
+          price: 20,
+        }),
+      ],
     });
+    await repository.create(invoice);
 
-    it("should find an invoice", async () => {
-        const date = new Date();
-        await InvoiceModel.create({
-            id: "1",
-            name: "John Doe",
-            document: "123456",
-            street: "Street 1",
-            number: "123",
-            complement: "Complement 1",
-            city: "City 1",
-            state: "State 1",
-            zipCode: "123456",
-            items: [{
-                id: "123",
-                name: "Item 1",
-                price: 10
-            }],
-            createdAt: date,
-            updatedAt: date,
-        }, { include: [{ model: InvoiceItemsModel }] });
+    const result = await repository.find(invoice.id.id);
 
-        const repository = new InvoiceRepository();
-
-        const foundedInvoice = await repository.find("1");
-
-        expect(foundedInvoice.id.id).toBe("1");
-        expect(foundedInvoice.name).toBe("John Doe");
-        expect(foundedInvoice.document).toBe("123456");
-        expect(foundedInvoice.address.street).toBe("Street 1");
-        expect(foundedInvoice.address.number).toBe("123");
-        expect(foundedInvoice.address.complement).toBe("Complement 1");
-        expect(foundedInvoice.address.city).toBe("City 1");
-        expect(foundedInvoice.address.state).toBe("State 1");
-        expect(foundedInvoice.address.zipCode).toBe("123456");
-        expect(foundedInvoice.items.length).toBe(1);
-        expect(foundedInvoice.items[0].id.id).toBe("123");
-        expect(foundedInvoice.items[0].name).toBe("Item 1");
-        expect(foundedInvoice.items[0].price).toBe(10);
-        expect(foundedInvoice.createdAt).toEqual(date);
-        expect(foundedInvoice.updatedAt).toEqual(date);
-    });
-})
+    expect(result).toBeDefined();
+    expect(result.id.id).toBe(invoice.id.id);
+    expect(result.name).toBe(invoice.name);
+    expect(result.document).toBe(invoice.document);
+    expect(result.address.street).toBe(invoice.address.street);
+    expect(result.address.number).toBe(invoice.address.number);
+    expect(result.address.complement).toBe(invoice.address.complement);
+    expect(result.address.city).toBe(invoice.address.city);
+    expect(result.address.state).toBe(invoice.address.state);
+    expect(result.address.zipCode).toBe(invoice.address.zipCode);
+    expect(result.items[0].id.id).toBe(invoice.items[0].id.id);
+    expect(result.items[0].name).toBe(invoice.items[0].name);
+    expect(result.items[0].price).toBe(invoice.items[0].price);
+    expect(result.items[1].id.id).toBe(invoice.items[1].id.id);
+    expect(result.items[1].name).toBe(invoice.items[1].name);
+    expect(result.items[1].price).toBe(invoice.items[1].price);
+    expect(result.total).toBe(30);
+  });
+});
